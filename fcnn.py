@@ -1,7 +1,7 @@
 import tensorflow as tf
 import os
 
-class FCNClassifier:
+class FCNN:
     def weight_variable(self, shape):
         initial = tf.truncated_normal(shape, stddev=0.1)
         return tf.Variable(initial)
@@ -10,7 +10,7 @@ class FCNClassifier:
         initial = tf.constant(0.1, shape=shape)
         return tf.Variable(initial)
 
-    def __init__(self, xlen, hidden_sizes, ylen, train_keep_probs, learning_rate, ckpt_path):
+    def __init__(self, xlen, hidden_sizes, ylen, train_keep_probs, learning_rate, ckpt_path, is_classifier):
 
         num_h_layers = len(hidden_sizes)
         self.learning_rate = learning_rate
@@ -43,13 +43,13 @@ class FCNClassifier:
 
 
         yl.append(tf.matmul(yl[-1], w[-1]) + b[-1])
-        self.y = yl[-1]
+        self.y = tf.nn.softmax(yl[-1]) if is_classifier else yl[-1]
 
         self.y_ = tf.placeholder(tf.float32, [None, ylen])
 
-        loss = tf.reduce_mean(tf.square(self.y_-self.y))
+        self.loss = tf.reduce_mean(tf.square(self.y_-self.y))
 
-        self.train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(loss)
+        self.train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
         init = tf.initialize_all_variables()
         self.sess = tf.Session()
@@ -75,6 +75,9 @@ class FCNClassifier:
 
     def get_accuracy(self, xdata, ydata):
         return self.sess.run(self.accuracy, feed_dict={self.x: xdata, self.y_: ydata, self.keep_probs: self.predict_keep_probs})
+
+    def get_loss(self, xdata, ydata):
+        return self.sess.run(self.loss, feed_dict={self.x: xdata, self.y_: ydata, self.keep_probs: self.predict_keep_probs})
 
     def save(self):
         self.saver.save(self.sess, self.ckpt_path + '/model.ckpt')
