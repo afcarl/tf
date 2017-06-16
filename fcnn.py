@@ -83,4 +83,4 @@ class FCNN:
         self.saver.save(self.sess, self.ckpt_path + '/model.ckpt')
 
     def predict(self, xdata):
-        return selfsess.run(self.y, feed_dict={self.x: xdata, self.keep_probs: self.predict_keep_probs})
+        return self.sess.run(self.y, feed_dict={self.x: xdata, self.keep_probs: self.predict_keep_probs})
